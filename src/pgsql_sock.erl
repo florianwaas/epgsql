@@ -72,6 +72,11 @@ init([C, Host, Username, Opts]) ->
 handle_call(Call, _From, State) ->
     {stop, {unsupported_call, Call}, State}.
 
+handle_cast({send, <<$X, _/binary>> = Data}, State) ->
+    #state{mod = Mod, sock = Sock} = State,
+    Mod:send(Sock, Data),
+    {noreply, State};
+
 handle_cast({send, Data}, State) ->
     #state{mod = Mod, sock = Sock} = State,
     ok = Mod:send(Sock, Data),
@@ -95,7 +100,7 @@ handle_info({_, _Sock, Data}, #state{tail = Tail} = State) ->
 
 handle_info({Closed, _Sock}, State)
   when Closed == tcp_closed; Closed == ssl_closed ->
-    {stop, sock_closed, State};
+    {stop, shutdown, State};
 
 handle_info({Error, _Sock, Reason}, State)
   when Error == tcp_error; Error == ssl_error ->
