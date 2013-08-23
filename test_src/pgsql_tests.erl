@@ -9,7 +9,7 @@
 -define(host, "localhost").
 -define(port, 5432).
 
--define(ssl_apps, [crypto, public_key, ssl]).
+-define(ssl_apps, [crypto, asn1, public_key, ssl]).
 
 connect_test() ->
     connect_only([]).
@@ -570,6 +570,24 @@ listen_notify_payload_test() ->
           end
       end,
       [{async, self()}]).
+
+cancel_test() ->
+    with_connection(
+        fun(C) ->
+            process_flag(trap_exit, true),
+            
+            Pid = spawn_link(
+                fun() ->
+                    exit(pgsql:squery(C, "select pg_sleep(1)"))
+                end),
+            
+            timer:sleep(150),
+            pgsql:cancel(C),
+            receive
+                {'EXIT', Pid, Reason} ->
+                    {error, #error{}} = Reason
+            end
+        end).
 
 application_test() ->
     lists:foreach(fun application:start/1, ?ssl_apps),

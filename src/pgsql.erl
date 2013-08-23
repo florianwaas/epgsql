@@ -7,6 +7,7 @@
 -export([parse/2, parse/3, parse/4, describe/2, describe/3]).
 -export([bind/3, bind/4, execute/2, execute/3, execute/4]).
 -export([close/2, close/3, sync/1]).
+-export([cancel/1]).
 -export([with_transaction/2]).
 
 -include("pgsql.hrl").
@@ -97,6 +98,9 @@ close(C, Type, Name) ->
 
 sync(C) ->
     pgsql_connection:sync(C).
+
+cancel(C) ->
+    pgsql_connection:cancel(C).
 
 %% misc helper functions
 with_transaction(C, F) ->

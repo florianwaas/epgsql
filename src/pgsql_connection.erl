@@ -8,6 +8,7 @@
 -export([squery/2, equery/3]).
 -export([parse/4, bind/4, execute/4, describe/3]).
 -export([close/3, sync/1]).
+-export([cancel/1]).
 
 -export([init/1, handle_event/3, handle_sync_event/4]).
 -export([handle_info/3, terminate/3, code_change/4]).
@@ -72,6 +73,9 @@ close(C, Type, Name) ->
 sync(C) ->
     gen_fsm:sync_send_event(C, sync, infinity).
 
+cancel(C) ->
+    gen_fsm:send_all_state_event(C, cancel).
+
 %% -- gen_fsm implementation --
 
 init([]) ->
@@ -92,6 +96,17 @@ handle_event({parameter_status, Name, Value}, State_Name, State) ->
 
 handle_event(stop, _State_Name, State) ->
     {stop, normal, State};
+
+handle_event(cancel, State_Name, State) ->
+    case State#state.backend of
+
+        {Pid, Key} ->
+            pgsql_sock:cancel(State#state.sock, Pid, Key);
+
+        undefined ->
+            ignore
+    end,
+    {next_state, State_Name, State};
 
 handle_event(Event, _State_Name, State) ->
     {stop, {unsupported_event, Event}, State}.
